@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>DeimoOS Terminal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="stylesheet" href="css/style.css">
+  <script defer src="https://umami.deimo.lol/script.js" data-website-id="39d173ac-ce66-4ecb-b4fc-0aff6c8d7bc5"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div>Enter username to continue:</div>
+    <div class="input-line">
+      <span>&gt;&nbsp;</span>
+      <input
+        id="usernameInput"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      />
+    </div>
+    <div id="loginBtn">
+      <span class="login-btn-prompt">&gt;&nbsp;</span><span class="login-btn-text">press enter to continue_</span>
+    </div>
+  </div>
+</div>
+
+<!-- TERMINAL (scrollable output area) -->
+<div id="terminal">
+  <div id="output"></div>
+  <!-- Desktop cursor input line -->
+  <div class="input-line" id="desktopInputLine">
+    <span id="prompt"></span>
+    <div id="inputDisplay"></div>
+  </div>
+</div>
+
+<!-- MOBILE INPUT BAR: always visible at bottom on mobile -->
+<div id="mobileBar">
+  <span id="mobilePrompt"></span>
+  <input
+    id="mobileField"
+    type="text"
+    autocomplete="off"
+    autocorrect="off"
+    autocapitalize="off"
+    spellcheck="false"
+    placeholder="type a command..."
+  />
+  <button id="mobileSubmit">&#9166;</button>
+</div>
+
+<script type="module" src="js/script.js"></script>
+</body>
+</html>

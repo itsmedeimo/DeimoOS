@@ -1,0 +1,263 @@
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: black;
+  color: #00ff9f;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 18px;
+  overflow: hidden;
+}
+
+/* CRT scanlines */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.03),
+    rgba(255,255,255,0.03) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* CRT flicker */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: rgba(0,255,150,0.02);
+  animation: flicker 0.12s infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+@keyframes flicker {
+  50% { opacity: 0.85; }
+}
+
+/* ── TERMINAL ── */
+#terminal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  /* bottom adjusted by JS on mobile when keyboard opens */
+  bottom: 0;
+  padding: 20px;
+  padding-bottom: 20px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── BLOCKS ── */
+.block { margin-bottom: 14px; }
+
+.command { color: #00cc7a; }
+
+.output {
+  white-space: pre-wrap;
+  margin-top: 4px;
+}
+
+/* ── ASCII ── */
+pre {
+  margin: 0;
+  white-space: pre;
+  font-size: clamp(5px, 2vw, 18px);
+  line-height: 1.2;
+}
+
+/* ── DESKTOP INPUT LINE ── */
+.input-line {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+#prompt {
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.prompt-user { color: #00ff9f; }
+.prompt-host { color: #00d4ff; }
+.prompt-path { color: #009966; }
+
+#inputDisplay {
+  white-space: pre;
+  word-break: break-all;
+}
+
+/* ── BLOCK CURSOR ── */
+.cursor {
+  background: #00ff9f;
+  color: black;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0; }
+}
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.login-box {
+  border: 1px solid #00ff9f;
+  padding: 20px;
+  width: min(400px, 90vw);
+}
+
+#usernameInput {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00ff9f;
+  font-family: inherit;
+  font-size: 16px;
+  caret-color: #00ff9f;
+  width: calc(100% - 16px);
+}
+
+#usernameInput::placeholder { color: #007a4f; }
+
+/* Terminal-styled login button */
+#loginBtn {
+  display: none;
+  margin-top: 14px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 2px 0;
+}
+
+#loginBtn .login-btn-prompt { color: #009966; }
+
+#loginBtn .login-btn-text {
+  color: #00ff9f;
+  animation: blink 1s step-end infinite;
+}
+
+#loginBtn:active .login-btn-text {
+  color: black;
+  background: #00ff9f;
+}
+
+/* ── LINKS ── */
+.terminal-link {
+  color: #ff4437;
+  text-decoration: none;
+}
+.terminal-link:hover { text-decoration: underline; }
+
+/* ── CLEAR WIPE ── */
+.clear-wipe {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  height: 4px;
+  background: #00ff9f;
+  box-shadow: 0 0 18px 6px #00ff9f;
+  animation: wipe 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+@keyframes wipe {
+  0%   { top: 0; opacity: 1; }
+  100% { top: 100%; opacity: 0.3; }
+}
+
+/* ── MOBILE INPUT BAR ── */
+/* Hidden by default; JS shows it on mobile */
+#mobileBar {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: #0a0a0a;
+  border-top: 1px solid #00ff9f;
+  align-items: center;
+  padding: 0 10px;
+  gap: 8px;
+  z-index: 500;
+}
+
+#mobileBar.visible {
+  display: flex;
+}
+
+#mobilePrompt {
+  white-space: nowrap;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+#mobileField {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #00ff9f;
+  font-family: inherit;
+  font-size: 16px; /* must be 16px to prevent iOS zoom */
+  caret-color: #00ff9f;
+  min-width: 0;
+}
+
+#mobileField::placeholder { color: #004d33; }
+
+#mobileSubmit {
+  background: transparent;
+  border: 1px solid #00ff9f;
+  color: #00ff9f;
+  font-family: inherit;
+  font-size: 18px;
+  line-height: 1;
+  padding: 4px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border-radius: 2px;
+}
+
+#mobileSubmit:active {
+  background: #00ff9f;
+  color: black;
+}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 600px) {
+  body { font-size: 14px; }
+
+  #terminal {
+    padding: 12px;
+    /* leave room for the mobile bar */
+    padding-bottom: 58px;
+  }
+
+  .login-box { padding: 16px; }
+
+  #usernameInput { font-size: 16px; }
+
+  #loginBtn { display: block; }
+
+  /* Hide the desktop cursor input line on mobile — the bar replaces it */
+  #desktopInputLine { display: none; }
+}
