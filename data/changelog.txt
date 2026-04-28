@@ -1,0 +1,44 @@
+SYSTEM CHANGELOG
+
+System change log initialized.
+Tracking all updates, fixes, and feature deployments.
+
+[ v0.6.0 ] 2026-04-28
+> Fixed input prompt showing during command execution
+> Added 'snake-leaderboard' (track your high scores)
+> CTRL + C now aborts current task and restores control
+> Added tab autocomplete for existing commands
+> Added man command with manual pages
+> Added changelog command
+> Screensaver (matrix rain) after 2 min inactivity
+> Immersive reboot / logoff sequences
+
+[ v0.5.2 ] 2026-04-27
+> Persistent usernames implemented
+> Visit counter per user added
+> Banned username check on login
+> New commands: logout, exit
+
+[ v0.4.0 ] 2026-04-25
+> Boot sequence + command sound effects enabled
+> New command: sudo
+> Umami Analytics integrated
+> Updated ASCII art (Boot Sequence, systeminfo)
+
+[ v0.3.0 ] 2026-04-24
+> README file created
+> New commands: snake, matrix
+> Favicon added
+
+[ v0.2.5 ] 2026-04-23
+> New commands: blog, weather, systeminfo, now, joke, quote
+
+[ v0.2.0 ] 2026-04-21
+> Mobile support enabled
+> Improved help command formatting
+> Immersive boot sequence added
+> New commands: whoami, version
+
+[ v0.1.0 ] 2026-04-20
+> Initial system structure deployed
+> Available commands: aboutme, contact, projects, links

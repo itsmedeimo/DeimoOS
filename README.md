@@ -14,16 +14,20 @@ The focus is on **immersion and realism** from the block cursor and command hist
 
 ## Features
 
-- 💻 Full-screen terminal interface (no popups or overlays)  
-- 🎨 Clean, minimalist UI inspired by Unix terminals  
-- ⌨️ Realistic command-line input system  
-- 🟩 Blinking block cursor (`█`) 
-- 📜 Automatic scrolling output  
-- 🧹 Smooth clear-screen animation  
-- 🧠 Command history support (↑ / ↓ navigation)  
-- ⚡ Lightweight — no frameworks, just vanilla JS  
-- 🔊 Sound effects (boot sequence + commands)  
-- 🕹️ Built-in terminal snake game 
+- 💻 Full-screen immersive terminal interface (no popups or overlays)
+- 🎨 Clean, minimalist Unix-style UI with smooth animations
+- ⌨️ Realistic command-line input with blinking block cursor
+- 🧠 Command history navigation (↑ / ↓) + tab autocomplete
+- 📜 Auto-scrolling output with smooth clear-screen transitions
+- ⚡ Lightweight vanilla JS architecture (no frameworks)
+- 🔊 Sound effects for boot, commands, and system events
+- 🕹️ Built-in Snake game with persistent leaderboard
+- 📚 man pages + changelog command system
+- 🧩 Rich command set (system, utility, fun, and control commands)
+- ⏹️ CTRL + C interrupt support for running tasks
+- 🧑 Persistent usernames with visit tracking
+- 🌐 Screensaver mode (Matrix rain) after inactivity
+- 🔁 Immersive boot, reboot, and logoff sequences
 
 ---
 
@@ -37,51 +41,57 @@ The focus is on **immersion and realism** from the block cursor and command hist
 
 ### Personal
 
-| Command   | Description |
-|----------|------------|
-| `aboutme` | Displays information about me |
-| `contact` | Shows contact details |
-| `projects` | Lists my projects and websites |
-| `blog` | Displays latest blog posts |
-| `links` | Socials and useful links |
+| Command    | Description |
+|------------|------------|
+| `aboutme`  | Displays information about me |
+| `contact`  | Learn how to contact me |
+| `projects` | Information and links about my other projects/websites |
+| `blog`     | Latest posts from my blog |
+| `links`    | Links to some of my social accounts and more |
 
 ### Fun
 
-| Command | Description |
-|--------|------------|
-| `joke` | Fetch a random programming joke |
-| `quote` | Fetch a random tech/programming quote |
-| `snake` | Play snake in the terminal |
-| `weather` | Get local weather (via geolocation) |
-| `matrix` | Trigger Matrix-style rain effect |
+| Command              | Description |
+|----------------------|------------|
+| `joke`              | Fetch a random programming joke |
+| `quote`             | Fetch a random techy/programming quote |
+| `matrix`            | Trigger Matrix rain effect |
+| `snake`             | Play snake in the terminal |
+| `snake-leaderboard` | Show the top 5 Snake scores |
+| `weather`           | Fetch local weather via geolocation |
 
 ### System
 
-| Command | Description |
-|--------|------------|
-| `help` | List all available commands |
-| `now` | Show current date and time |
-| `whoami` | Display session info |
-| `version` | Show terminal version |
-| `systeminfo` | Display system details |
-| `sudo` | Attempt to gain root access 😉 |
-| `clear` | Clear the terminal screen |
-| `reboot` | Restart the terminal session |
+| Command          | Description |
+|------------------|------------|
+| `help`           | Displays the available commands |
+| `man <command>`  | Show the manual page for a command |
+| `changelog`      | Show the system changelog |
+| `clear`          | Clears the terminal screen |
+| `now`            | Display current date and time |
+| `whoami`         | Display info about your session |
+| `version`        | Display terminal version info |
+| `systeminfo`     | Display system info |
+| `sudo`           | Gain root access |
+| `reboot`         | Reboot the terminal |
+| `logout`         | Log out and return to login screen |
 
 ---
+## Changelog
+
+Access the full system update history here: [CHANGELOG.md](./CHANGELOG.md)
+
+All notable changes to DeimoOS are recorded in this log.  
+Entries are listed from newest to oldest version.
 
 ## Roadmap
-
-### Core Improvements
-- 🧠 Command autocomplete (Tab completion)  
-- 🔍 Reverse search through command history (Ctrl + R)  
-- 💾 Save session state using `localStorage`  
 
 ### UI / UX Enhancements
 - 🎨 Customizable themes (colors, fonts, cursor styles)  
 
 ### Fun Additions
-- 🤖 Fake AI assistant command (`ai chat`)  
+- 🤖 Fake AI assistant command (`ai chat`)
+- 🕹️ More minigames
 
 ---
 
