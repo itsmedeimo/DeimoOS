@@ -1,0 +1,16 @@
+{
+  "_instructions": [
+    "Edit entries below to manually set scores.",
+    "Bump 'version' by 1 after any change to push the reset to all visitors on next load.",
+    "Only the top 5 entries are shown — add as many as you like, extras are dropped.",
+    "Format: { \"username\": \"name\", \"score\": number }"
+  ],
+  "version": 1,
+  "leaderboard": [
+    { "username": "deimo",   "score": 42 },
+    { "username": "ghost",   "score": 31 },
+    { "username": "neo",     "score": 27 },
+    { "username": "root",    "score": 19 },
+    { "username": "null",    "score": 3  }
+  ]
+}

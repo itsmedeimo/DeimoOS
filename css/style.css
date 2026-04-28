@@ -48,12 +48,23 @@ body::after {
   top: 0;
   left: 0;
   right: 0;
-  /* bottom adjusted by JS on mobile when keyboard opens */
   bottom: 0;
   padding: 20px;
   padding-bottom: 20px;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ── SCROLLABLE WIDE OUTPUT ── */
+/* Applied to help, version, changelog etc. on mobile so they scroll
+   horizontally instead of wrapping and breaking the layout */
+.output-scroll {
+  overflow-x: auto;
+  white-space: pre;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  display: block;
 }
 
 /* ── BLOCKS ── */
