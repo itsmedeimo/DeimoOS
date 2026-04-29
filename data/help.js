@@ -19,6 +19,8 @@ FUN COMMANDS
 > matrix            Trigger the Matrix rain
 > snake             Play snake in the terminal
 > snake-leaderboard Show the top 5 Snake scores
+> themes            Show current theme and available options
+> theme <name>      Switch the terminal color theme
 > weather           Fetch local weather via geolocation
 
 SYSTEM COMMANDS

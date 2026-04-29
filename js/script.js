@@ -1,6 +1,8 @@
 import { commands, manFormat, manUsage, manNotFound, leaderboardFormat } from "./commands.js";
+import { FS_COMMANDS, handleFsCommand, getPathCompletions, getDisplayCwd, clearSession, hasSessionFiles, fsManPages } from "./filesystem/index.js";
 import { bannedUsernames, bannedPatterns } from "../data/banned.js";
 import { manPages } from "../data/man.js";
+import { THEMES, applyTheme, getCurrentTheme, getThemeColors } from "./themes.js";
 
 const terminal      = document.getElementById("terminal");
 const output        = document.getElementById("output");
@@ -35,7 +37,7 @@ let screensaverInterval = null;
 
 /* ── MOBILE DETECTION ── */
 const isMobile = () =>
-  window.matchMedia("(max-width: 600px)").matches || 
+  window.matchMedia("(max-width: 600px)").matches ||
   window.matchMedia("(hover: none) and (pointer: coarse)").matches;
 
 /* ── DATA PATH HELPER ── */
@@ -78,7 +80,7 @@ function startScreensaver() {
   screensaverInterval = setInterval(() => {
     ctx.fillStyle = "rgba(0,0,0,0.05)";
     ctx.fillRect(0, 0, screensaverCanvas.width, screensaverCanvas.height);
-    ctx.fillStyle = "#00ff9f";
+    ctx.fillStyle = getThemeColors().primary;
     ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
     for (let i = 0; i < drops.length; i++) {
       ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
@@ -131,17 +133,18 @@ function isUsernameBanned(name) {
 
 /* ── PROMPT ── */
 function updatePrompt() {
-  const promptHTML = 
+  const path = getDisplayCwd();
+  const promptHTML =
     `<span class="prompt-user">${username}</span>` +
     `<span class="prompt-host">@${host}</span>` +
-    `<span class="prompt-path">:~$</span>&nbsp;`;
-  
+    `<span class="prompt-path">:${path}$</span>&nbsp;`;
+
   promptEl.innerHTML = promptHTML;
-  if (mobilePrompt) mobilePrompt.innerHTML = `${username}@${host}:~$ `;
+  if (mobilePrompt) mobilePrompt.innerHTML = `${username}@${host}:${path}$ `;
 }
 
 function scrollToBottom() {
-  terminal.scrollTo({ top: terminal.scrollHeight, behavior: "smooth" });
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
 function renderInput() {
@@ -149,7 +152,7 @@ function renderInput() {
     inputDisplay.innerHTML = "";
     return;
   }
-  
+
   const before = currentInput.slice(0, cursorPos);
   const char   = currentInput[cursorPos] || " ";
   const after  = currentInput.slice(cursorPos + 1);
@@ -161,7 +164,7 @@ function createBlock(cmd) {
   block.classList.add("block");
   const c = document.createElement("div");
   c.classList.add("command");
-  c.textContent = `${username}@${host}:~$ ${cmd}`;
+  c.textContent = `${username}@${host}:${getDisplayCwd()}$ ${cmd}`;
   const o = document.createElement("div");
   o.classList.add("output");
   block.appendChild(c);
@@ -246,7 +249,7 @@ function parseRSS(data) {
       const dateEl = item.querySelector("pubDate") || item.querySelector("published") || item.querySelector("updated");
       const date = dateEl ? new Date(dateEl.textContent).toLocaleDateString("en-GB") : "";
       const link = extractLink(item);
-      return `- <a href="${link}" target="_blank" class="terminal-link">${title}</a> <span style="color:#009966">(${date})</span>`;
+      return `- <a href="${link}" target="_blank" class="terminal-link">${title}</a> <span style="color:${getThemeColors().dim}">(${date})</span>`;
     }).join("\n");
   } catch (err) {
     console.error("Parsing error:", err);
@@ -351,6 +354,34 @@ async function showLeaderboard(out) {
 
 
 
+/* ── CRASH SEQUENCE ── */
+async function runCrashSequence(out) {
+  isBooting = true;
+  await typeTextInto("WARNING: You are about to delete the root directory.", out);
+  await new Promise(r => setTimeout(r, 800));
+  await typeTextInto("\nExecuting...", out);
+  await new Promise(r => setTimeout(r, 500));
+  const errors = ["Deleting /bin...", "Deleting /etc...", "Deleting /home...", "CRITICAL: Kernel integrity lost", "FATAL: /sbin/init not found", "PANIC: Attempted to kill init!", "Memory dump at 0x004F3A2...", "SYSTEM_FAILURE_000x042", "Connection reset by peer"];
+  for (let i = 0; i < 30; i++) {
+    const div = document.createElement("div");
+    div.style.color = i % 5 === 0 ? getThemeColors().error : getThemeColors().primary;
+    div.textContent = `[${(Math.random() * 100).toFixed(4)}] ${errors[i % errors.length]}`;
+    output.appendChild(div); scrollToBottom();
+    await new Promise(r => setTimeout(r, 30));
+    if (i === 15) terminal.style.filter = "invert(1) contrast(2)";
+  }
+  terminal.style.animation = "flicker 0.1s infinite alternate";
+  await new Promise(r => setTimeout(r, 1000));
+  terminal.style.filter = ""; terminal.style.animation = "";
+  output.innerHTML = "";
+  document.body.style.background = "white";
+  await new Promise(r => setTimeout(r, 100));
+  document.body.style.background = "black";
+  usernameInput.value = "";
+  loginScreen.style.display = "flex"; usernameInput.focus();
+  isBooting = false; isProcessing = false;
+}
+
 /* ── PROCESS COMMAND ── */
 let cancelCommand = false;
 
@@ -389,10 +420,31 @@ async function processCommand(cmd) {
     cancelCommand = false;
     if (desktopInputLine && !isMobile()) desktopInputLine.style.display = "flex";
     if (isMobile()) mobileBar.classList.add("visible");
+    updatePrompt();
     renderInput();
+    scrollToBottom();
   };
   if (desktopInputLine) desktopInputLine.style.display = "none";
   if (mobileBar) mobileBar.classList.remove("visible");
+
+  /* ── FILESYSTEM COMMANDS ── */
+  if (FS_COMMANDS.includes(baseCmd)) {
+    const fsCtx = {
+      typeTextInto,
+      scrollToBottom,
+      isMobile,
+      username,
+      setIsAwaitingInput: (v) => { isAwaitingInput = v; },
+      clearOutput: () => { output.innerHTML = ""; },
+    };
+    const signal = await handleFsCommand(baseCmd, args, out, fsCtx);
+    if (signal === "__crash__") {
+      await runCrashSequence(out);
+    } else {
+      restorePrompt();
+    }
+    return;
+  }
 
   /* ── MAN ── */
   if (baseCmd === "man") {
@@ -400,11 +452,40 @@ async function processCommand(cmd) {
       await typeTextInto(manUsage(), out);
       restorePrompt(); return;
     }
-    const page = manPages[fullArgs.toLowerCase()];
+    const key  = fullArgs.toLowerCase();
+    const page = manPages[key] || fsManPages[key];
     if (page) {
+      out.style.whiteSpace = "pre";
       await typeTextInto(manFormat(fullArgs, page), out);
+      out.style.whiteSpace = "";
     } else {
       await typeTextInto(manNotFound(fullArgs), out);
+    }
+    restorePrompt(); return;
+  }
+
+  /* ── THEMES ── */
+  if (baseCmd === "themes") {
+    const cur  = getCurrentTheme();
+    const list = Object.keys(THEMES).map(k =>
+      k === cur ? `  ${k} (active)` : `  ${k}`
+    ).join("\n");
+    await typeTextInto(`Current theme: ${THEMES[cur].label}\n\nAvailable themes:\n${list}`, out);
+    restorePrompt(); return;
+  }
+
+  /* ── THEME ── */
+  if (baseCmd === "theme") {
+    if (!fullArgs) {
+      await typeTextInto(`Usage: theme <name>\nAvailable: ${Object.keys(THEMES).join(", ")}`, out);
+    } else {
+      const key = fullArgs.toLowerCase();
+      if (!(key in THEMES)) {
+        await typeTextInto(`Unknown theme: "${key}"\nAvailable: ${Object.keys(THEMES).join(", ")}`, out);
+      } else {
+        applyTheme(key);
+        await typeTextInto(`Theme set to ${THEMES[key].label}.`, out);
+      }
     }
     restorePrompt(); return;
   }
@@ -454,36 +535,9 @@ async function processCommand(cmd) {
     restorePrompt(); return;
   }
 
-  /* ── CRASH ── */
+  /* ── CRASH (legacy path, kept for safety) ── */
   if (res === "__crash__") {
-    if (fullArgs !== "-rf /") {
-      await typeTextInto("rm: missing operand", out);
-      restorePrompt(); return;
-    }
-    isBooting = true;
-    await typeTextInto("WARNING: You are about to delete the root directory.", out);
-    await new Promise(r => setTimeout(r, 800));
-    await typeTextInto("\nExecuting...", out);
-    await new Promise(r => setTimeout(r, 500));
-    const errors = ["Deleting /bin...", "Deleting /etc...", "Deleting /home...", "CRITICAL: Kernel integrity lost", "FATAL: /sbin/init not found", "PANIC: Attempted to kill init!", "Memory dump at 0x004F3A2...", "SYSTEM_FAILURE_000x042", "Connection reset by peer"];
-    for (let i = 0; i < 30; i++) {
-      const div = document.createElement("div");
-      div.style.color = i % 5 === 0 ? "#ff4437" : "#00ff9f";
-      div.textContent = `[${(Math.random() * 100).toFixed(4)}] ${errors[i % errors.length]}`;
-      output.appendChild(div); scrollToBottom();
-      await new Promise(r => setTimeout(r, 30));
-      if (i === 15) terminal.style.filter = "invert(1) contrast(2)";
-    }
-    terminal.style.animation = "flicker 0.1s infinite alternate";
-    await new Promise(r => setTimeout(r, 1000));
-    terminal.style.filter = ""; terminal.style.animation = "";
-    output.innerHTML = "";
-    document.body.style.background = "white";
-    await new Promise(r => setTimeout(r, 100));
-    document.body.style.background = "black";
-    usernameInput.value = "";
-    loginScreen.style.display = "flex"; usernameInput.focus();
-    isBooting = false; isProcessing = false;
+    await runCrashSequence(out);
     return;
   }
 
@@ -493,7 +547,7 @@ async function processCommand(cmd) {
     const hackLines = ["Security Alert: Breach detected", "SQL Injection: Success", "RSA Layer: Decrypted", "Overriding Mainframe..."];
     for (let i = 0; i < 20; i++) {
       if (cancelCommand) break;
-      const div = document.createElement("div"); div.style.color = "#00ff9f";
+      const div = document.createElement("div"); div.style.color = getThemeColors().primary;
       div.textContent = `[${Math.random().toString(16).substring(2, 8).toUpperCase()}] ${hackLines[i % 4]}`;
       output.appendChild(div); scrollToBottom();
       await new Promise(r => setTimeout(r, 40));
@@ -508,7 +562,7 @@ async function processCommand(cmd) {
     }
     if (!cancelCommand) {
       const granted = document.createElement("div");
-      granted.innerHTML = `<br><span style="color:#ff4437; font-size: 22px; font-weight: bold;">[ ACCESS DENIED. FIREWALL ACTIVATED ]</span><br>`;
+      granted.innerHTML = `<br><span style="color:${getThemeColors().error}; font-size: 22px; font-weight: bold;">[ ACCESS DENIED. FIREWALL ACTIVATED ]</span><br>`;
       output.appendChild(granted); scrollToBottom();
     }
     restorePrompt(); return;
@@ -523,10 +577,10 @@ async function processCommand(cmd) {
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
     const fontSize = 16; const cols = Math.floor(canvas.width / fontSize);
     const drops = Array(cols).fill(1);
-    const chars = "\u30A2\u30A4\u30A6\u30A8\u30AA\u30AB\u30AD\u30AF\u30B1\u30B30123456789ABCDEF";
+    const chars = "アイウエオカキクケコ0123456789ABCDEF";
     const interval = setInterval(() => {
       ctx.fillStyle = "rgba(0, 0, 0, 0.05)"; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#00ff9f"; ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
+      ctx.fillStyle = getThemeColors().primary; ctx.font = `${fontSize}px 'Share Tech Mono', monospace`;
       for (let i = 0; i < drops.length; i++) {
         ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
         if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
@@ -552,7 +606,7 @@ async function processCommand(cmd) {
       line.textContent = "[sudo] password for root: ";
       out.appendChild(line); scrollToBottom();
       const input = document.createElement("input"); input.type = "password";
-      input.style.cssText = "background: transparent; border: none; outline: none; color: transparent; caret-color: #00ff9f; font-family: inherit; font-size: inherit; width: 1px;";
+      input.style.cssText = `background: transparent; border: none; outline: none; color: transparent; caret-color: ${getThemeColors().primary}; font-family: inherit; font-size: inherit; width: 1px;`;
       line.appendChild(input);
       const asterisks = document.createElement("span"); line.appendChild(asterisks);
       input.addEventListener("input", () => { asterisks.textContent = "*".repeat(input.value.length); });
@@ -580,7 +634,7 @@ async function processCommand(cmd) {
   /* ── NEOFETCH ── */
   if (res === "__neofetch__") {
     const ascii = ["", "██████████  ", "░░███░░░░███ ", " ░███   ░░███", " ░███    ░███", " ░███    ░███", " ░███    ███ ", " ██████████  ", "░░░░░░░░░░   "];
-    const info  = [`${username}@${host}`, "─".repeat(24), `OS       : DeimoOS 0.5.1`, `Shell    : deimo.sh`, `Engine   : Vanilla JS`, `Host     : ${host}`, `Uptime   : ${Math.floor((Date.now() - (window._sessionStart || Date.now())) / 1000)}s`, `Theme    : Matrix Green`, `Font     : Share Tech Mono`];
+    const info  = [`${username}@${host}`, "─".repeat(24), `OS       : DeimoOS 0.6.1`, `Shell    : deimo.sh`, `Engine   : Vanilla JS`, `Host     : ${host}`, `Uptime   : ${Math.floor((Date.now() - (window._sessionStart || Date.now())) / 1000)}s`, `Theme    : ${THEMES[getCurrentTheme()].label}`, `Font     : Share Tech Mono`];
     const el = document.createElement("div");
     el.style.whiteSpace = "pre";
     out.appendChild(el);
@@ -589,14 +643,14 @@ async function processCommand(cmd) {
       // Mobile: skip block art — just show info cleanly
       el.classList.add("output-scroll");
       for (let i = 0; i < info.length; i++) {
-        el.innerHTML += `<span style="color:#00d4ff">${info[i]}</span>\n`;
+        el.innerHTML += `<span style="color:${getThemeColors().accent}">${info[i]}</span>\n`;
         scrollToBottom(); await new Promise(r => setTimeout(r, 60));
       }
     } else {
       // Desktop: full ascii + info side by side
       const totalRows = Math.max(ascii.length, info.length);
       for (let i = 0; i < totalRows; i++) {
-        el.innerHTML += `<span style="color:#ffffff">${(ascii[i] || "").padEnd(16)}</span>  <span style="color:#00d4ff">${info[i] || ""}</span>\n`;
+        el.innerHTML += `<span style="color:#ffffff">${(ascii[i] || "").padEnd(16)}</span>  <span style="color:${getThemeColors().accent}">${info[i] || ""}</span>\n`;
         scrollToBottom(); await new Promise(r => setTimeout(r, 60));
       }
     }
@@ -621,7 +675,7 @@ async function processCommand(cmd) {
     container.style.cssText = "display:inline-flex; flex-direction:column; align-items:center; gap:8px; margin-top:6px;";
 
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "border:1px solid #00ff9f; display:inline-block;";
+    wrapper.style.cssText = `border:1px solid ${getThemeColors().primary}; display:inline-block;`;
     const canvas = document.createElement("canvas");
     canvas.width  = cols * size;
     canvas.height = rows * size;
@@ -650,7 +704,7 @@ async function processCommand(cmd) {
       const btn = (label, col, row, dx, dy) => {
         const b = document.createElement("button");
         b.textContent = label;
-        b.style.cssText = `grid-column:${col}; grid-row:${row}; background:transparent; border:1px solid #00ff9f; color:#00ff9f; font-family:inherit; font-size:18px; cursor:pointer; border-radius:3px; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent;`;
+        b.style.cssText = `grid-column:${col}; grid-row:${row}; background:transparent; border:1px solid ${getThemeColors().primary}; color:${getThemeColors().primary}; font-family:inherit; font-size:18px; cursor:pointer; border-radius:3px; display:flex; align-items:center; justify-content:center; -webkit-tap-highlight-color:transparent;`;
         const move = (e) => { e.preventDefault(); const nd={x:dx,y:dy}; if(!(nd.x===-dir.x&&nd.y===-dir.y)) nextDir=nd; };
         b.addEventListener("touchstart", move, {passive:false});
         b.addEventListener("mousedown",  move);
@@ -662,7 +716,7 @@ async function processCommand(cmd) {
       dpad.appendChild(btn("▼", 2, 3,  0,  1));
       const qBtn = document.createElement("button");
       qBtn.textContent = "■ Quit";
-      qBtn.style.cssText = "background:transparent; border:1px solid #ff4437; color:#ff4437; font-family:inherit; font-size:13px; cursor:pointer; border-radius:3px; padding:6px; margin-top:2px; width:140px;";
+      qBtn.style.cssText = `background:transparent; border:1px solid ${getThemeColors().error}; color:${getThemeColors().error}; font-family:inherit; font-size:13px; cursor:pointer; border-radius:3px; padding:6px; margin-top:2px; width:140px;`;
       qBtn.addEventListener("touchstart", (e) => { e.preventDefault(); running = false; }, {passive:false});
       qBtn.addEventListener("mousedown", () => { running = false; });
       const dpadWrap = document.createElement("div");
@@ -677,8 +731,8 @@ async function processCommand(cmd) {
     const placeFood = () => { food = {x:Math.floor(Math.random()*cols), y:Math.floor(Math.random()*rows)}; };
     const draw = () => {
       ctx.fillStyle = "#000"; ctx.fillRect(0,0,canvas.width,canvas.height);
-      ctx.fillStyle = "#00ff9f"; for (const s of snake) ctx.fillRect(s.x*size,s.y*size,size-2,size-2);
-      ctx.fillStyle = "#ff4437"; ctx.fillRect(food.x*size,food.y*size,size-2,size-2);
+      ctx.fillStyle = getThemeColors().primary; for (const s of snake) ctx.fillRect(s.x*size,s.y*size,size-2,size-2);
+      ctx.fillStyle = getThemeColors().error; ctx.fillRect(food.x*size,food.y*size,size-2,size-2);
     };
     const keyHandler = (e) => {
       const map = {ArrowUp:{x:0,y:-1},w:{x:0,y:-1},ArrowDown:{x:0,y:1},s:{x:0,y:1},ArrowLeft:{x:-1,y:0},a:{x:-1,y:0},ArrowRight:{x:1,y:0},d:{x:1,y:0}};
@@ -726,20 +780,27 @@ async function processCommand(cmd) {
     isBooting = true; clearTimeout(screensaverTimer); stopScreensaver();
     const sessionSecs = Math.floor((Date.now() - (window._sessionStart || Date.now())) / 1000);
     const sessionTime = sessionSecs < 60 ? `${sessionSecs}s` : `${Math.floor(sessionSecs / 60)}m ${sessionSecs % 60}s`;
-    const addLine = async (text, color = "#00ff9f", delay = 320) => {
+    const addLine = async (text, color = getThemeColors().primary, delay = 320) => {
       await new Promise(r => setTimeout(r, delay));
       const d = document.createElement("div"); d.textContent = text; d.style.color = color;
       out.appendChild(d); scrollToBottom();
     };
-    await addLine(`Logging out ${username}...`, "#00ff9f", 0);
-    await addLine(`Session duration : ${sessionTime}`, "#009966");
-    await addLine("Saving session state...", "#009966");
-    await addLine("  [  OK  ] Session state saved", "#009966");
-    await addLine("  [  OK  ] Terminal buffer flushed", "#009966");
-    await addLine("  [  OK  ] Command history written", "#009966");
-    await addLine("  [  OK  ] User environment unloaded", "#009966");
-    await addLine("  [  OK  ] Auth tokens cleared", "#009966");
-    await addLine(`Goodbye, ${username}.`, "#00d4ff", 400);
+    await addLine(`Logging out ${username}...`, getThemeColors().primary, 0);
+    await addLine(`Session duration : ${sessionTime}`, getThemeColors().dim);
+    await addLine("Saving session state...", getThemeColors().dim);
+    await addLine("  [  OK  ] Session state saved", getThemeColors().dim);
+    await addLine("  [  OK  ] Terminal buffer flushed", getThemeColors().dim);
+    await addLine("  [  OK  ] Command history written", getThemeColors().dim);
+    await addLine("  [  OK  ] User environment unloaded", getThemeColors().dim);
+    await addLine("  [  OK  ] Auth tokens cleared", getThemeColors().dim);
+    await addLine("Wiping temporary files...", getThemeColors().dim);
+    if (hasSessionFiles()) {
+      await addLine("  [  OK  ] Session filesystem entries removed", getThemeColors().dim);
+    }
+    await addLine("  [  OK  ] /tmp cleared", getThemeColors().dim);
+    await addLine("  [  OK  ] Runtime cache purged", getThemeColors().dim);
+    clearSession();
+    await addLine(`Goodbye, ${username}.`, getThemeColors().accent, 400);
     await new Promise(r => setTimeout(r, 700));
     const wipe = document.createElement("div"); wipe.classList.add("clear-wipe");
     document.body.appendChild(wipe); wipe.addEventListener("animationend", () => wipe.remove());
@@ -757,20 +818,20 @@ async function processCommand(cmd) {
     const svc = async (status, label, delay = 230) => {
       await new Promise(r => setTimeout(r, delay));
       const d = document.createElement("div");
-      const col = { OK: "#009966", WAIT: "#ffaa00", FAIL: "#ff4437" };
+      const col = { OK: getThemeColors().dim, WAIT: getThemeColors().warn, FAIL: getThemeColors().error };
       const tag = { OK: "  [  OK  ]", WAIT: "  [ WAIT ]", FAIL: "  [ FAIL ]" };
       d.innerHTML = `<span style="color:${col[status]}">${tag[status]}</span> ${label}`;
       out.appendChild(d); scrollToBottom();
     };
-    const hdr = async (text, color = "#00ff9f", delay = 120) => {
+    const hdr = async (text, color = getThemeColors().primary, delay = 120) => {
       await new Promise(r => setTimeout(r, delay));
       const d = document.createElement("div"); d.style.color = color; d.textContent = text;
       out.appendChild(d); scrollToBottom();
     };
-    await hdr(`Broadcast message from root@${host}:`, "#00ff9f", 0);
-    await hdr("The system is going down for reboot NOW!", "#ff4437", 150);
+    await hdr(`Broadcast message from root@${host}:`, getThemeColors().primary, 0);
+    await hdr("The system is going down for reboot NOW!", getThemeColors().error, 150);
     await new Promise(r => setTimeout(r, 500));
-    await hdr("Stopping services...", "#00ff9f", 0);
+    await hdr("Stopping services...", getThemeColors().primary, 0);
     await svc("OK",   "Stopped target Multi-User System");
     await svc("OK",   "Stopped target Login Prompts");
     await svc("OK",   "Stopped RSS prefetch daemon (deimo-rss.service)");
@@ -786,15 +847,23 @@ async function processCommand(cmd) {
     await svc("OK",   "Stopped Terminal input handler (deimosh.service)");
     await svc("OK",   "Stopped target Sound System");
     await new Promise(r => setTimeout(r, 180));
-    await hdr("Unmounting filesystems...", "#00ff9f", 0);
-    await svc("OK", "Unmounted /home/user");
+    await hdr("Wiping temporary files...", getThemeColors().primary, 0);
+    if (hasSessionFiles()) {
+      await svc("OK", "Removed session filesystem entries (fs-session.service)");
+    }
+    await svc("OK", "Cleared /tmp (tmpfs)");
+    await svc("OK", "Purged /var/cache/deimosh");
+    await svc("OK", "Removed runtime session data");
+    clearSession();
+    await hdr("Unmounting filesystems...", getThemeColors().primary, 0);
+    await svc("OK", "Unmounted /home/deimo");
     await svc("OK", "Unmounted /var/log");
     await svc("OK", "Unmounted /etc");
     await svc("OK", "Unmounted /");
     await new Promise(r => setTimeout(r, 180));
-    await hdr("Syncing hardware clock...", "#00ff9f", 0);
+    await hdr("Syncing hardware clock...", getThemeColors().primary, 0);
     await new Promise(r => setTimeout(r, 480));
-    await hdr("Reached target System Power Off. Rebooting...", "#ffaa00", 0);
+    await hdr("Reached target System Power Off. Rebooting...", getThemeColors().warn, 0);
     await new Promise(r => setTimeout(r, 900));
     let flickers = 0;
     const fi = setInterval(() => {
@@ -825,7 +894,7 @@ async function processCommand(cmd) {
       const c = weatherData.current;
       const codes = { 0:"Clear sky",1:"Mainly clear",2:"Partly cloudy",3:"Overcast",45:"Foggy",48:"Icy fog",51:"Light drizzle",53:"Drizzle",55:"Heavy drizzle",61:"Light rain",63:"Rain",65:"Heavy rain",71:"Light snow",73:"Snow",75:"Heavy snow",80:"Rain showers",81:"Showers",82:"Heavy showers",95:"Thunderstorm",96:"Thunderstorm w/ hail",99:"Heavy thunderstorm" };
       out.innerHTML = "";
-      await typeTextInto(`Location    : ${city}, ${revData.address.country || ""}\nCondition   : ${codes[c.weathercode] || "Unknown"}\nTemperature : ${c.temperature_2m}\u00b0C\nHumidity    : ${c.relativehumidity_2m}%\nWind Speed  : ${c.windspeed_10m} km/h`, out);
+      await typeTextInto(`Location    : ${city}, ${revData.address.country || ""}\nCondition   : ${codes[c.weathercode] || "Unknown"}\nTemperature : ${c.temperature_2m}°C\nHumidity    : ${c.relativehumidity_2m}%\nWind Speed  : ${c.windspeed_10m} km/h`, out);
     } catch (err) {
       out.innerHTML = "";
       await typeTextInto(err.code === 1 ? "Error: Location access denied." : "Error: Could not fetch weather data.", out);
@@ -843,7 +912,7 @@ async function processCommand(cmd) {
         await typeTextInto(setup, out);
         const pause = document.createElement("div"); pause.textContent = "..."; out.appendChild(pause);
         await new Promise(r => setTimeout(r, 1500));
-        const punch = document.createElement("div"); punch.style.color = "#00d4ff"; out.appendChild(punch);
+        const punch = document.createElement("div"); punch.style.color = getThemeColors().accent; out.appendChild(punch);
         await typeTextInto(punchline, punch);
       }
     } catch (err) { await typeTextInto("Error: Failed to connect to the Joke-Server.", out); }
@@ -852,8 +921,8 @@ async function processCommand(cmd) {
 
   if (res && res.quote) {
     await typeTextInto(`"${res.quote}"`, out);
-    const attr = document.createElement("div"); attr.style.color = "#00d4ff"; attr.style.marginTop = "4px"; out.appendChild(attr);
-    await typeTextInto(`\u2014 ${res.author}`, attr);
+    const attr = document.createElement("div"); attr.style.color = getThemeColors().accent; attr.style.marginTop = "4px"; out.appendChild(attr);
+    await typeTextInto(`— ${res.author}`, attr);
     restorePrompt(); return;
   }
 
@@ -895,7 +964,7 @@ async function boot() {
     : `Welcome back, ${username}! This is your ${visitSuffix} visit.`;
 
   const lines = ["Booting DeimoOS...", "Loading kernel...", "Mounting filesystem...", "", "ASCII", "", welcomeMsg, "Use the help command to see all of the available commands."];
-  
+
   for (const line of lines) {
     if (line === "ASCII") {
       if (isMobile()) {
@@ -913,11 +982,11 @@ async function boot() {
     }
     scrollToBottom(); await new Promise(r => setTimeout(r, 300));
   }
-  
+
   isBooting = false;
   updatePrompt();
   resetScreensaverTimer();
-  
+
   if (isMobile()) setupMobileInput();
   else {
     if (desktopInputLine) desktopInputLine.style.display = "flex";
@@ -967,6 +1036,7 @@ function submitLogin(e) {
 }
 
 window.addEventListener("load", () => {
+  applyTheme(getCurrentTheme());
   const savedUsername = localStorage.getItem("username");
   if (savedUsername && !isUsernameBanned(savedUsername)) {
     username = savedUsername;
@@ -998,7 +1068,7 @@ document.addEventListener("keydown", async (e) => {
     if (isProcessing) {
       cancelCommand = true;
       const d = document.createElement("div");
-      d.style.color = "#ff4437";
+      d.style.color = getThemeColors().error;
       d.textContent = "^C";
       output.appendChild(d);
       scrollToBottom();
@@ -1011,9 +1081,44 @@ document.addEventListener("keydown", async (e) => {
   // Tab autocomplete
   if (e.key === "Tab") {
     e.preventDefault();
-    const allCmds = [...Object.keys(commands), "man"];
+    const allCmds = [...Object.keys(commands), "man", "theme", "themes"];
     const input   = currentInput.toLowerCase();
     const parts   = input.trimStart().split(/\s+/);
+
+    // FS command path autocomplete — "cat co" → "cat contact.txt", "rm -r ph" → "rm -r photos/"
+    if (FS_COMMANDS.includes(parts[0]) && parts.length >= 2) {
+      const partial    = parts[parts.length - 1];
+      const prefix     = parts.slice(0, -1).join(" ") + " ";
+      const filterMap  = { cd: "dirs", mkdir: "dirs", cat: "files", touch: "files", nano: "files" };
+      let typeFilter   = filterMap[parts[0]] || "all";
+      if (parts[0] === "rm") {
+        const recursive = parts.slice(1, -1).some(p => p.startsWith("-") && /r/i.test(p));
+        typeFilter = recursive ? "dirs" : "files";
+      }
+      const matches    = getPathCompletions(partial, typeFilter);
+      if (matches.length === 1) {
+        currentInput = prefix + matches[0];
+        cursorPos = currentInput.length;
+        renderInput();
+      } else if (matches.length > 1) {
+        const d = document.createElement("div");
+        d.style.color = getThemeColors().dim;
+        d.textContent = matches.join("   ");
+        output.appendChild(d);
+        scrollToBottom();
+        const common = matches.reduce((a, b) => {
+          let i = 0;
+          while (i < a.length && i < b.length && a[i] === b[i]) i++;
+          return a.slice(0, i);
+        });
+        if (common.length > partial.length) {
+          currentInput = prefix + common;
+          cursorPos = currentInput.length;
+          renderInput();
+        }
+      }
+      return;
+    }
 
     // "man <partial>" — autocomplete the argument against manPages keys
     if (parts[0] === "man" && parts.length >= 2) {
@@ -1025,7 +1130,25 @@ document.addEventListener("keydown", async (e) => {
         renderInput();
       } else if (matches.length > 1) {
         const d = document.createElement("div");
-        d.style.color = "#009966";
+        d.style.color = getThemeColors().dim;
+        d.textContent = matches.join("   ");
+        output.appendChild(d);
+        scrollToBottom();
+      }
+      return;
+    }
+
+    // "theme <partial>" — autocomplete theme names
+    if (parts[0] === "theme" && parts.length >= 2) {
+      const partial = (parts[1] || "").toLowerCase();
+      const matches = Object.keys(THEMES).filter(k => k.startsWith(partial));
+      if (matches.length === 1) {
+        currentInput = "theme " + matches[0];
+        cursorPos = currentInput.length;
+        renderInput();
+      } else if (matches.length > 1) {
+        const d = document.createElement("div");
+        d.style.color = getThemeColors().dim;
         d.textContent = matches.join("   ");
         output.appendChild(d);
         scrollToBottom();
@@ -1043,7 +1166,7 @@ document.addEventListener("keydown", async (e) => {
       renderInput();
     } else if (matches.length > 1) {
       const d = document.createElement("div");
-      d.style.color = "#009966";
+      d.style.color = getThemeColors().dim;
       d.textContent = matches.join("   ");
       output.appendChild(d);
       scrollToBottom();

@@ -62,7 +62,7 @@ or you can join my <a href="https://deimo.me/discord" target="_blank" class="ter
 `
   }),
 
-  hack: () => "__hack__",
+  hack:   () => "__hack__",
   matrix: () => "__matrix__",
   changelog: () => "__changelog__",
   "snake-leaderboard": () => "__snake-leaderboard__",
@@ -72,7 +72,7 @@ or you can join my <a href="https://deimo.me/discord" target="_blank" class="ter
   snake: () => "__snake__",
   clear: () => "__clear__",
   joke: () => "__joke__",
-  sudo: () => "__sudo__",
+  sudo:       () => "__sudo__",
   systeminfo: () => "__neofetch__",
   now: () => {
     const now = new Date();
@@ -83,7 +83,7 @@ or you can join my <a href="https://deimo.me/discord" target="_blank" class="ter
     html:
 `DeimoOS
 
-Version      : v0.6.0
+Version      : v0.6.1
 Build        : 2025-04-26
 Engine       : Vanilla JS
 Renderer     : HTML5 / CSS3
@@ -92,7 +92,6 @@ Source Code  : <a href="https://github.com/itsmedeimo/DeimoOS" target="_blank" c
   }),
 
   weather: () => "__weather__",
-  rm: () => "__crash__",
   quote: () => {
     const pick = quotes[Math.floor(Math.random() * quotes.length)];
     return { quote: pick.text, author: pick.author };
