@@ -1,11 +1,28 @@
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
+:root {
+  --c-primary:     #00ff9f;
+  --c-accent:      #00d4ff;
+  --c-dim:         #009966;
+  --c-error:       #ff4437;
+  --c-warn:        #ffaa00;
+  --c-bg:          #000000;
+  --c-bg-alt:      #0a0a0a;
+  --c-hidden:      #555555;
+  --c-ph:          #007a4f;
+  --c-ph-dim:      #004d33;
+  --c-link:        #ff4437;
+  --c-img-filter:  brightness(0.65) saturate(1.3) sepia(0.2) contrast(1.1);
+  --c-img-tint:    rgba(0,255,150,0.08);
+  --c-crt-flicker: rgba(0,255,150,0.02);
+}
+
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: black;
-  color: #00ff9f;
+  background: var(--c-bg);
+  color: var(--c-primary);
   font-family: 'Share Tech Mono', monospace;
   font-size: 18px;
   overflow: hidden;
@@ -32,7 +49,7 @@ body::after {
   content: "";
   position: fixed;
   inset: 0;
-  background: rgba(0,255,150,0.02);
+  background: var(--c-crt-flicker);
   animation: flicker 0.12s infinite;
   pointer-events: none;
   z-index: 10;
@@ -70,7 +87,7 @@ body::after {
 /* ── BLOCKS ── */
 .block { margin-bottom: 14px; }
 
-.command { color: #00cc7a; }
+.command { color: var(--c-dim); }
 
 .output {
   white-space: pre-wrap;
@@ -97,9 +114,9 @@ pre {
   white-space: nowrap;
 }
 
-.prompt-user { color: #00ff9f; }
-.prompt-host { color: #00d4ff; }
-.prompt-path { color: #009966; }
+.prompt-user { color: var(--c-primary); }
+.prompt-host { color: var(--c-accent); }
+.prompt-path { color: var(--c-dim); }
 
 #inputDisplay {
   white-space: pre;
@@ -108,8 +125,8 @@ pre {
 
 /* ── BLOCK CURSOR ── */
 .cursor {
-  background: #00ff9f;
-  color: black;
+  background: var(--c-primary);
+  color: var(--c-bg);
   animation: blink 1s step-end infinite;
 }
 
@@ -121,7 +138,7 @@ pre {
 #login-screen {
   position: fixed;
   inset: 0;
-  background: black;
+  background: var(--c-bg);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -129,7 +146,7 @@ pre {
 }
 
 .login-box {
-  border: 1px solid #00ff9f;
+  border: 1px solid var(--c-primary);
   padding: 20px;
   width: min(400px, 90vw);
 }
@@ -138,14 +155,14 @@ pre {
   background: transparent;
   border: none;
   outline: none;
-  color: #00ff9f;
+  color: var(--c-primary);
   font-family: inherit;
   font-size: 16px;
-  caret-color: #00ff9f;
+  caret-color: var(--c-primary);
   width: calc(100% - 16px);
 }
 
-#usernameInput::placeholder { color: #007a4f; }
+#usernameInput::placeholder { color: var(--c-ph); }
 
 /* Terminal-styled login button */
 #loginBtn {
@@ -157,21 +174,21 @@ pre {
   padding: 2px 0;
 }
 
-#loginBtn .login-btn-prompt { color: #009966; }
+#loginBtn .login-btn-prompt { color: var(--c-dim); }
 
 #loginBtn .login-btn-text {
-  color: #00ff9f;
+  color: var(--c-primary);
   animation: blink 1s step-end infinite;
 }
 
 #loginBtn:active .login-btn-text {
-  color: black;
-  background: #00ff9f;
+  color: var(--c-bg);
+  background: var(--c-primary);
 }
 
 /* ── LINKS ── */
 .terminal-link {
-  color: #ff4437;
+  color: var(--c-link);
   text-decoration: none;
 }
 .terminal-link:hover { text-decoration: underline; }
@@ -182,8 +199,8 @@ pre {
   top: 0; left: 0;
   width: 100%;
   height: 4px;
-  background: #00ff9f;
-  box-shadow: 0 0 18px 6px #00ff9f;
+  background: var(--c-primary);
+  box-shadow: 0 0 18px 6px var(--c-primary);
   animation: wipe 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   pointer-events: none;
   z-index: 9998;
@@ -203,8 +220,8 @@ pre {
   left: 0;
   right: 0;
   height: 48px;
-  background: #0a0a0a;
-  border-top: 1px solid #00ff9f;
+  background: var(--c-bg-alt);
+  border-top: 1px solid var(--c-primary);
   align-items: center;
   padding: 0 10px;
   gap: 8px;
@@ -226,19 +243,19 @@ pre {
   background: transparent;
   border: none;
   outline: none;
-  color: #00ff9f;
+  color: var(--c-primary);
   font-family: inherit;
   font-size: 16px; /* must be 16px to prevent iOS zoom */
-  caret-color: #00ff9f;
+  caret-color: var(--c-primary);
   min-width: 0;
 }
 
-#mobileField::placeholder { color: #004d33; }
+#mobileField::placeholder { color: var(--c-ph-dim); }
 
 #mobileSubmit {
   background: transparent;
-  border: 1px solid #00ff9f;
-  color: #00ff9f;
+  border: 1px solid var(--c-primary);
+  color: var(--c-primary);
   font-family: inherit;
   font-size: 18px;
   line-height: 1;
@@ -249,8 +266,8 @@ pre {
 }
 
 #mobileSubmit:active {
-  background: #00ff9f;
-  color: black;
+  background: var(--c-primary);
+  color: var(--c-bg);
 }
 
 /* ── MOBILE RESPONSIVE ── */
@@ -271,4 +288,81 @@ pre {
 
   /* Hide the desktop cursor input line on mobile — the bar replaces it */
   #desktopInputLine { display: none; }
+}
+
+/* ── NANO EDITOR ── */
+.nano-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--c-bg);
+  z-index: 9995;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+.nano-bar {
+  background: var(--c-primary);
+  color: var(--c-bg);
+  padding: 1px 6px;
+  white-space: pre;
+  font-family: inherit;
+  font-size: inherit;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.nano-body {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--c-primary);
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: var(--c-primary);
+  resize: none;
+  padding: 8px 20px;
+  line-height: inherit;
+  overflow-y: auto;
+}
+
+/* ── CRT IMAGE (cat on image files) ── */
+.crt-image {
+  position: relative;
+  display: inline-block;
+  margin-top: 6px;
+  max-width: min(480px, 100%);
+}
+
+.crt-image img {
+  display: block;
+  max-width: 100%;
+  filter: var(--c-img-filter);
+}
+
+.crt-image::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.38),
+    rgba(0, 0, 0, 0.38) 1px,
+    transparent 2px,
+    transparent 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.crt-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 38%, rgba(0, 0, 0, 0.88) 100%),
+    linear-gradient(var(--c-img-tint), var(--c-img-tint));
+  pointer-events: none;
+  z-index: 2;
 }

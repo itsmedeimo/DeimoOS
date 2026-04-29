@@ -82,6 +82,22 @@ export const manPages = {
   exit:
     "Alias for logout.",
 
+  themes:
+    "List all available color themes and show which one is currently active.\n\n" +
+    "    Usage: themes\n\n" +
+    "    The active theme is marked with (active) in the list.",
+
+  theme:
+    "Switch the terminal color theme. Usage: theme <name>\n\n" +
+    "    Available themes:\n" +
+    "      default    Green phosphor — the classic terminal look\n" +
+    "      c64        Commodore 64 — deep blue with light lavender text\n" +
+    "      ibm        IBM 3270 — bright green on black, mainframe style\n" +
+    "      dracula    Dracula — dark purple with soft white text\n" +
+    "      nord       Nord — arctic blue-grey palette\n\n" +
+    "    Theme selection is saved and restored on your next visit.\n" +
+    "    Use Tab after 'theme ' to autocomplete the theme name.",
+
   // ── Hidden / Easter Eggs ──────────────────────────────────────────────
   hack:
     "Attempt to hack the mainframe. Runs a fake decryption sequence. (Secret command.)",

@@ -3,6 +3,15 @@
 This file tracks all notable changes to the project.  
 Versions are listed from newest to oldest.
 
+## v0.6.1 2026-04-29
+
+- Fake filesystem easter egg with navigation, file reading, and text editing
+- Session files persist until reboot or logoff
+- Tab autocomplete for paths and filenames
+- Images render inline in the terminal
+- Hidden man pages for filesystem commands
+- Added `theme` and `themes` commands with 5 color themes: Default, Commodore 64, IBM, Dracula, and Nord
+
 ## v0.6.0 2026-04-28
 
 - Fixed input prompt showing during command execution

@@ -15,19 +15,21 @@ The focus is on **immersion and realism** from the block cursor and command hist
 ## Features
 
 - 💻 Full-screen immersive terminal interface (no popups or overlays)
-- 🎨 Clean, minimalist Unix-style UI with smooth animations
+- 🎨 Clean, minimalist Unix-style UI with smooth animations + theme support (Default, Commodore 64, IBM, Dracula, Nord)
+- 🔁 Immersive boot, reboot, and logoff sequences
+- 🔊 Sound effects for boot, commands, and system events
 - ⌨️ Realistic command-line input with blinking block cursor
 - 🧠 Command history navigation (↑ / ↓) + tab autocomplete
-- 📜 Auto-scrolling output with smooth clear-screen transitions
-- ⚡ Lightweight vanilla JS architecture (no frameworks)
-- 🔊 Sound effects for boot, commands, and system events
-- 🕹️ Built-in Snake game with persistent leaderboard
-- 📚 man pages + changelog command system
-- 🧩 Rich command set (system, utility, fun, and control commands)
 - ⏹️ CTRL + C interrupt support for running tasks
+- 📜 Auto-scrolling output with smooth clear-screen transitions
+- 🧩 Rich command set (system, utility, fun, filesystem, and control commands)
+- 📚 man pages + changelog command system
+- 🖼️ Inline image rendering directly in the terminal
+- 💾 Session-based file persistence (resets on reboot/logoff)
 - 🧑 Persistent usernames with visit tracking
+- 🕹️ Built-in Snake game with persistent leaderboard
 - 🌐 Screensaver mode (Matrix rain) after inactivity
-- 🔁 Immersive boot, reboot, and logoff sequences
+- ⚡ Lightweight vanilla JS architecture (no frameworks)
 
 ---
 
@@ -58,6 +60,8 @@ The focus is on **immersion and realism** from the block cursor and command hist
 | `matrix`            | Trigger Matrix rain effect |
 | `snake`             | Play snake in the terminal |
 | `snake-leaderboard` | Show the top 5 Snake scores |
+| `themes`            | Show current theme and available options |
+| `theme <name>`      | Switch the terminal color theme |
 | `weather`           | Fetch local weather via geolocation |
 
 ### System
