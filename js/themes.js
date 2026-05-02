@@ -1,7 +1,29 @@
+// themes.js — defines all color themes and the mechanism for applying them.
+//
+// Each theme maps to a set of CSS custom properties (--c-*) on :root.
+// applyTheme() writes these properties to document.documentElement.style,
+// so every element using var(--c-primary) etc. updates instantly.
+//
+// Theme property guide:
+//   primary    — main terminal text color
+//   accent     — highlighted text (usernames, links, info values)
+//   dim        — subdued text (command echoes, timestamps, "OK" lines)
+//   error      — error messages, destructive actions
+//   warn       — warnings, "WAIT" lines
+//   bg         — terminal background
+//   bgAlt      — slightly lighter background (mobile bar)
+//   hidden     — dotfiles, permissions, very subdued text
+//   ph         — input placeholder color
+//   phDim      — darker placeholder (mobile field)
+//   link       — clickable terminal links
+//   imgFilter  — CSS filter applied to images shown via `cat` on image files
+//   imgTint    — color overlay on images (radial gradient, very subtle)
+//   crtFlicker — the CRT flicker overlay color (body::after)
+
 export const THEMES = {
   default: {
     label:      "Default",
-    primary:    "#00ff9f",
+    primary:    "#00ff9f",  // classic green-on-black terminal
     accent:     "#00d4ff",
     dim:        "#009966",
     error:      "#ff4437",
@@ -88,6 +110,8 @@ export const THEMES = {
 
 const DEFAULT = "default";
 
+// Writes all theme colors as CSS custom properties on :root so the entire
+// page re-colors instantly. Also persists the choice to localStorage.
 export function applyTheme(name) {
   const t = THEMES[name] || THEMES[DEFAULT];
   const r = document.documentElement.style;
@@ -108,11 +132,14 @@ export function applyTheme(name) {
   localStorage.setItem("theme", name in THEMES ? name : DEFAULT);
 }
 
+// Returns the saved theme key (or "default" if nothing is saved / key is invalid)
 export function getCurrentTheme() {
   const s = localStorage.getItem("theme");
   return s && s in THEMES ? s : DEFAULT;
 }
 
+// Shortcut used throughout the codebase to get colors for inline styles
+// (e.g. canvas drawing, dynamically colored DOM elements)
 export function getThemeColors() {
   return THEMES[getCurrentTheme()];
 }

@@ -1,3 +1,14 @@
+// systemcommands.js — implements all filesystem commands (ls, cd, cat, mkdir, touch, rm, nano).
+//
+// The virtual filesystem has two layers:
+//   1. TREE (tree.js)    — static files and dirs baked into the source; never modified
+//   2. session (session.js) — files created by the user during a session (touch, mkdir, nano)
+//                             stored in a plain JS object; wiped on reboot/logout
+//
+// Write access is intentionally limited to /home/deimo and /tmp.
+// /root and /home/deimo/passwords/ are "restricted" — they ask for a sudo password
+// and then deny access, for authenticity.
+
 import { TREE } from "./tree.js";
 import {
   HOME, getCwd, setCwd, getDisplayCwd,
@@ -7,6 +18,8 @@ import { getThemeColors } from "../themes.js";
 
 /* ── PATH UTILS ── */
 
+// Resolves ".." and "." segments in an absolute path string
+// e.g. normalizePath("/home/deimo/../etc") → "/etc"
 function normalizePath(path) {
   const parts = path.split("/").filter(Boolean);
   const out = [];
@@ -17,6 +30,8 @@ function normalizePath(path) {
   return "/" + out.join("/");
 }
 
+// Converts any user-typed path to an absolute path using the current directory.
+// Handles: empty (→ cwd), "~" (→ HOME), "~/foo", "/absolute", "relative"
 function resolvePath(input) {
   if (!input) return getCwd();
   if (input === "~") return HOME;
@@ -25,10 +40,14 @@ function resolvePath(input) {
   return normalizePath(getCwd() + "/" + input);
 }
 
+// Looks up a node (file or dir) by its absolute path.
+// Checks session files first so user-created files shadow nothing in TREE.
 function getNode(path) {
   return TREE[path] || getSessionFiles()[path] || null;
 }
 
+// Returns all immediate children of a directory as { name → node } pairs.
+// Merges TREE and session files so both static and user-created entries appear.
 function listChildren(dirPath) {
   const prefix = dirPath === "/" ? "/" : dirPath + "/";
   const children = {};
@@ -37,18 +56,22 @@ function listChildren(dirPath) {
     if (p === dirPath) continue;
     if (!p.startsWith(prefix)) continue;
     const rest = p.slice(prefix.length);
-    if (!rest.includes("/")) children[rest] = node;
+    if (!rest.includes("/")) children[rest] = node; // only direct children (no grandchildren)
   }
   return children;
 }
 
-const isRestricted = (path) => path === "/root" || path.startsWith("/root/");
-const isDenied     = (path) => path.startsWith("/home/deimo/passwords/");
-const isWritable   = (path) =>
+// Access control helpers
+const isRestricted = (path) => path === "/root" || path.startsWith("/root/");          // sudo prompt
+const isDenied     = (path) => path.startsWith("/home/deimo/passwords/");              // sudo prompt
+const isWritable   = (path) =>                                                         // only home + tmp
   path === HOME || path.startsWith(HOME + "/") ||
   path === "/tmp" || path.startsWith("/tmp/");
 
 /* ── RESTRICTED PASSWORD PROMPT (always denied) ── */
+// Simulates a sudo password prompt for flavor — no matter what the user types,
+// it will always print "Permission denied". The invisible <input type="password">
+// captures keystrokes so the terminal doesn't intercept them during the prompt.
 
 async function askPasswordDeny(out, ctx) {
   await new Promise(resolve => {
@@ -193,12 +216,13 @@ async function cmdLs(args, out, ctx) {
   return true;
 }
 
+// Maps a filesystem entry to a display color (mimics ls --color behavior)
 function colorFor(name, node) {
   const c = getThemeColors();
-  if (node.type === "dir")   return c.accent;
-  if (node.type === "image") return c.warn;
-  if (name.startsWith("."))  return c.hidden;
-  return c.primary;
+  if (node.type === "dir")   return c.accent;   // directories in accent color
+  if (node.type === "image") return c.warn;      // image files in warning color
+  if (name.startsWith("."))  return c.hidden;    // dotfiles in dim gray
+  return c.primary;                              // regular files in primary color
 }
 
 async function cmdCat(args, out, ctx) {
@@ -353,6 +377,10 @@ async function cmdRm(args, out, ctx) {
 }
 
 /* ── NANO ── */
+// A minimal in-browser text editor that mimics GNU nano.
+// It creates a fullscreen overlay with a header bar, textarea, and footer bar.
+// Ctrl+S saves to session files; Ctrl+X exits (with unsaved-change warning).
+// The editor is only allowed in writable paths (/home/deimo, /tmp).
 
 async function cmdNano(args, out, ctx) {
   if (!args[0]) {
@@ -458,6 +486,11 @@ async function cmdNano(args, out, ctx) {
 }
 
 /* ── PATH COMPLETION ── */
+// Used by the Tab key handler in script.js to suggest file/directory names.
+// typeFilter lets the caller restrict completions by type:
+//   "all"   — everything
+//   "files" — only non-directory nodes
+//   "dirs"  — only directory nodes
 
 // typeFilter: "all" | "files" | "dirs"
 export function getPathCompletions(partial, typeFilter = "all") {
@@ -488,9 +521,11 @@ export function getPathCompletions(partial, typeFilter = "all") {
 }
 
 /* ── DISPATCH ── */
+// Maps command names to handler functions. script.js checks FS_COMMANDS first
+// and routes matching commands here instead of through the commands.js lookup.
 
 const HANDLERS = {
-  ls: cmdLs, dir: cmdLs,
+  ls: cmdLs, dir: cmdLs, // `dir` is an alias for `ls` (Windows familiarity)
   cd: cmdCd,
   cat: cmdCat,
   pwd: cmdPwd,
@@ -500,8 +535,10 @@ const HANDLERS = {
   nano: cmdNano,
 };
 
+// Exported so script.js can check `FS_COMMANDS.includes(baseCmd)` before dispatch
 export const FS_COMMANDS = Object.keys(HANDLERS);
 
+// Returns the handler's return value; "__crash__" from cmdRm triggers the crash sequence
 export async function handleFsCommand(baseCmd, args, out, ctx) {
   const handler = HANDLERS[baseCmd];
   if (!handler) return null;

@@ -3,6 +3,14 @@
 This file tracks all notable changes to the project.  
 Versions are listed from newest to oldest.
 
+## v0.6.2 2026-05-02
+
+- ASCII art banner now appears on the login screen (same logo as boot)
+- Login box is centered independently; ASCII art floats above it
+- Command dispatch refactored into a registry (COMMAND_REGISTRY). Adding new commands no longer requires touching the dispatcher
+- `CTRL + C` now cancels blog post fetches
+- Full inline documentation added across script.js and commands.js
+
 ## v0.6.1 2026-04-29
 
 - Fake filesystem easter egg with navigation, file reading, and text editing

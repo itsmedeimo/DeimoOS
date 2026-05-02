@@ -1,11 +1,26 @@
+// tree.js — defines the static virtual filesystem (the TREE object).
+//
+// TREE is a flat map of absolute path strings to node objects:
+//   { type: "dir" }                       — a directory
+//   { type: "file", content: "..." }      — a text file with pre-written content
+//   { type: "image", src: "path/to.jpg" } — an image (shown by `cat`)
+//
+// This is intentionally a flat lookup (not a nested tree) so path resolution
+// is just TREE["/some/path"] — simple and fast.
+//
+// The syslog is generated at module load time so its timestamps reflect
+// the current date, making it feel like a real system log.
+
 const _d = new Date();
 const _mo = _d.toLocaleDateString("en-US", { month: "short" });
 const _dy = String(_d.getDate()).padStart(2, " ");
 
+// Formats a fake syslog timestamp in "Mon DD HH:MM:SS hostname" style
 function _ts(h, m, s) {
   return `${_mo} ${_dy} ${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")} deimo.me`;
 }
 
+// Fake system log — generated once at boot with today's date
 const SYSLOG = [
   `${_ts(0,0,1)} kernel: Booting DeimoOS v0.6.0`,
   `${_ts(0,0,1)} kernel: Command line: BOOT_IMAGE=/boot/deimosh root=UUID=d31m0-root-42`,
@@ -23,6 +38,7 @@ const SYSLOG = [
   `${_ts(0,0,6)} deimosh[42]: Login: user authenticated.`,
 ].join("\n");
 
+// /dev/random content — random hex generated once at load time (not truly random on each read)
 const RANDOM_HEX = (() => {
   let s = "";
   for (let i = 0; i < 8; i++) s += Math.random().toString(16).slice(2, 10);
