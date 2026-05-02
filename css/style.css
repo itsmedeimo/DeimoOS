@@ -1,5 +1,21 @@
+/* style.css — all styling for the DeimoOS terminal interface.
+ *
+ * Key CSS custom properties (--c-*) are defined on :root and overridden
+ * by themes.js at runtime via document.documentElement.style.setProperty().
+ * Every color in this file uses a var(--c-*) so themes take effect instantly.
+ *
+ * Z-index layers:
+ *   body::before / ::after  → 10   (CRT scanlines + flicker — always on top of content)
+ *   #mobileBar              → 500  (mobile input bar — above terminal, below overlays)
+ *   .clear-wipe             → 9998 (clear animation sweep)
+ *   .nano-overlay           → 9995 (nano editor fullscreen)
+ *   screensaver canvas      → 9996 (matrix screensaver — above nano)
+ *   #login-screen           → 9999 (login — highest, shown first)
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
+/* Default theme values — overwritten at runtime by themes.js (applyTheme) */
 :root {
   --c-primary:     #00ff9f;
   --c-accent:      #00d4ff;
@@ -28,7 +44,8 @@ body {
   overflow: hidden;
 }
 
-/* CRT scanlines */
+/* CRT scanlines — a repeating 4px pattern (1px tinted line + 3px transparent gap)
+   overlaid on the entire page to simulate a CRT monitor screen */
 body::before {
   content: "";
   position: fixed;
@@ -40,11 +57,12 @@ body::before {
     transparent 2px,
     transparent 4px
   );
-  pointer-events: none;
+  pointer-events: none; /* clicks pass through to the terminal below */
   z-index: 10;
 }
 
-/* CRT flicker */
+/* CRT flicker — a semi-transparent colored overlay that pulses at 0.12s
+   to simulate phosphor glow flickering; color varies per theme */
 body::after {
   content: "";
   position: fixed;
@@ -124,6 +142,9 @@ pre {
 }
 
 /* ── BLOCK CURSOR ── */
+/* The fake cursor is a <span class="cursor"> injected by renderInput() in script.js.
+   It inverts fg/bg colors on the character under the cursor and blinks at 1s intervals.
+   step-end means it jumps from visible to invisible instantly (no fade), like a real terminal. */
 .cursor {
   background: var(--c-primary);
   color: var(--c-bg);
@@ -140,9 +161,28 @@ pre {
   inset: 0;
   background: var(--c-bg);
   display: flex;
-  justify-content: center;
-  align-items: center;
+  justify-content: center;  /* login box: horizontally centered */
+  align-items: center;      /* login box: vertically centered */
   z-index: 9999;
+}
+
+/* ASCII art banner — taken out of normal flow so the login box can center
+   independently. Pinned near the top of the screen with a percentage offset. */
+.login-ascii {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%); /* horizontally center without knowing its own width */
+  margin: 0;
+  color: var(--c-primary);
+  font-size: clamp(4px, 1vw, 13px);
+  line-height: 1.2;
+  white-space: pre;
+  user-select: none;
+}
+
+@media (max-width: 700px) {
+  .login-ascii { display: none; }
 }
 
 .login-box {
@@ -194,6 +234,8 @@ pre {
 .terminal-link:hover { text-decoration: underline; }
 
 /* ── CLEAR WIPE ── */
+/* A glowing horizontal line that sweeps downward when `clear` is run.
+   The element is created in JS, animates, then removes itself on animationend. */
 .clear-wipe {
   position: fixed;
   top: 0; left: 0;
@@ -328,6 +370,11 @@ pre {
 }
 
 /* ── CRT IMAGE (cat on image files) ── */
+/* When `cat` is run on an image file, it renders inside a .crt-image wrapper
+   that applies three visual layers to make it look like it's on a CRT monitor:
+     1. img itself    — color/brightness filtered via --c-img-filter
+     2. ::before      — heavy scanline overlay (darker lines than the body ones)
+     3. ::after       — vignette (dark edges) + theme-colored tint overlay */
 .crt-image {
   position: relative;
   display: inline-block;
@@ -338,9 +385,10 @@ pre {
 .crt-image img {
   display: block;
   max-width: 100%;
-  filter: var(--c-img-filter);
+  filter: var(--c-img-filter); /* desaturates and darkens to match terminal feel */
 }
 
+/* Scanline overlay — heavier than body::before (38% black vs 3% white) */
 .crt-image::before {
   content: "";
   position: absolute;
@@ -356,6 +404,7 @@ pre {
   z-index: 1;
 }
 
+/* Vignette + theme tint — radial gradient darkens the edges, linear gradient adds color cast */
 .crt-image::after {
   content: "";
   position: absolute;
